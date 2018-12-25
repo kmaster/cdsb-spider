@@ -31,6 +31,7 @@ public class SpiderSchedule {
             int sleeptime = (int) (Math.random() * 10) * 1000 * 60;//随机了1-10分钟
             logger.info("定时延时{}毫秒执行", sleeptime);
             Thread.sleep(sleeptime);
+
             runSpiderTask.run();
 
         } catch (Exception e) {

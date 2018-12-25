@@ -16,6 +16,8 @@ import us.codecraft.webmagic.selector.Html;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -33,6 +35,7 @@ public class IndexPageProcessor extends Thread implements PageProcessor {
 
 
     private final static Logger logger = LoggerFactory.getLogger(IndexPageProcessor.class);
+    ExecutorService cachedThreadPool = Executors.newFixedThreadPool(40);
 
 
     //CountDownLatch 作为计数器记录线程
@@ -66,10 +69,10 @@ public class IndexPageProcessor extends Thread implements PageProcessor {
 //        https://static.cdsb.com/micropub/Articles/201812/e5c6930ff047a0218e516f84414d2478.html
         List<String> detailUrl = new ArrayList<>();
         detailUrl.clear();
-        AtomicInteger currentCount = new AtomicInteger(0);
 
         detailUrl = html.links().regex("https://static.cdsb.com/micropub/Articles\\/\\d*\\/\\w*.html").all();
 
+        AtomicInteger currentCount = new AtomicInteger(0);
         for (String itemurl : detailUrl) {
             try {
                 SbrecordExample sbrecordExample = new SbrecordExample();
@@ -77,8 +80,23 @@ public class IndexPageProcessor extends Thread implements PageProcessor {
                 List<Sbrecord> sbrecords = sbrecordDao.selectByExample(sbrecordExample);
 
                 if (sbrecords == null || sbrecords.size() == 0) {
-                    Spider.create(itemPageProcessor).addUrl(itemurl).run();
-                    allCount.getAndIncrement();
+
+
+
+                    cachedThreadPool.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            Spider.create(itemPageProcessor).addUrl(itemurl).run();
+                        }
+                    });
+
+//                    new Thread(new Runnable() {
+//                        @Override
+//                        public void run() {
+//                            Spider.create(itemPageProcessor).addUrl(itemurl).run();
+//                        }
+//                    }).start();
+
                     currentCount.getAndIncrement();
                 }
             } catch (Exception e) {
@@ -88,7 +106,6 @@ public class IndexPageProcessor extends Thread implements PageProcessor {
 
         }
         logger.info("查新完成，本次抓取url数量： {}", currentCount.get());
-        logger.info("查新完成，所有抓取url数量： {}", allCount.get());
 
 
     }

@@ -11,6 +11,7 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Component;
 import us.codecraft.webmagic.Page;
 import us.codecraft.webmagic.Site;
+import us.codecraft.webmagic.Spider;
 import us.codecraft.webmagic.processor.PageProcessor;
 import us.codecraft.webmagic.selector.Html;
 import us.codecraft.webmagic.selector.Selectable;
@@ -18,6 +19,8 @@ import us.codecraft.webmagic.selector.Selectable;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -33,6 +36,7 @@ public class ItemPageProcessor extends Thread implements PageProcessor {
     JavaMailSender jms;
     private final static Logger logger = LoggerFactory.getLogger(ItemPageProcessor.class);
 
+    ExecutorService cachedThreadPool = Executors.newCachedThreadPool();
 
     //CountDownLatch 作为计数器记录线程
     private static CountDownLatch latch = new CountDownLatch(9);
@@ -70,10 +74,10 @@ public class ItemPageProcessor extends Thread implements PageProcessor {
 
 
         String content = xpath.toString();
-        if (content.length() > 10000) {
+        if (content != null && content.length() > 10000) {
             content = content.substring(0, 9995);
         }
-        sbrecord.setContent(content);
+//        sbrecord.setContent(content);
 
         List<Selectable> detailItem2 = html.xpath("//script [@type=\"text/javascript\"]").nodes();
         RegexUtil regexUtil = new RegexUtil();
@@ -119,27 +123,55 @@ public class ItemPageProcessor extends Thread implements PageProcessor {
             sbrecordDao.insert(sbrecord);
             logger.info("已添加新纪录：" + sbrecord);
 
-            new Thread(new Runnable() {
+
+            cachedThreadPool.execute(new Runnable() {
                 @Override
                 public void run() {
                     try {
-                        SimpleMailMessage message = new SimpleMailMessage();
-                        message.setFrom("18116628807@163.com");
-                        message.setTo("396367775@qq.com");
-                        message.setSubject("商报有新news");
-                        message.setText("编辑:" + sbrecord.getName() + ",标题:" + sbrecord.getTitle() + ",url:" + sbrecord.getUrl());
+                        if("唐欢".equals(sbrecord.getName())){
+                            SimpleMailMessage message = new SimpleMailMessage();
+                            message.setFrom("18116628807@163.com");
+                            message.setTo("396367775@qq.com");
+                            message.setSubject("商报有新news");
+                            message.setText("编辑:" + sbrecord.getName() + "类型:" + sbrecord.getCategory() + ",标题:" + sbrecord.getTitle() + ",url:" + sbrecord.getUrl());
 
-                        int sleeptime = (int) (Math.random() * 10) * 1000 * 2;//随机了1-10分钟
-                        Thread.sleep(sleeptime);
+                            int sleeptime = (int) (Math.random() * 10) * 1000 * 2;
+                            Thread.sleep(sleeptime);
+                            jms.send(message);
+                            logger.info("邮件发送成功，编辑:" + sbrecord.getName() + ",新闻标题是:" + sbrecord.getTitle());
+                        }
 
-                        jms.send(message);
-                        logger.info("邮件发送成功，编辑:" + sbrecord.getName() + ",新闻标题是:" + sbrecord.getTitle());
                     } catch (Exception e) {
-                        logger.error("邮件发送失败 "+e.getMessage());
+                        logger.error("邮件发送失败 " + e.getMessage());
                         e.printStackTrace();
                     }
+
                 }
-            }).run();
+            });
+
+
+
+//            new Thread(new Runnable() {
+//                @Override
+//                public void run() {
+//                    try {
+//                        SimpleMailMessage message = new SimpleMailMessage();
+//                        message.setFrom("18116628807@163.com");
+//                        message.setTo("396367775@qq.com");
+//                        message.setSubject("商报有新news");
+//                        message.setText("编辑:" + sbrecord.getName() + ",标题:" + sbrecord.getTitle() + ",url:" + sbrecord.getUrl());
+//
+//                        int sleeptime = (int) (Math.random() * 10) * 1000 * 2;//随机了1-10分钟
+////                        Thread.sleep(sleeptime);
+////
+////                        jms.send(message);
+//                        logger.info("邮件发送成功，编辑:" + sbrecord.getName() + ",新闻标题是:" + sbrecord.getTitle());
+//                    } catch (Exception e) {
+//                        logger.error("邮件发送失败 " + e.getMessage());
+//                        e.printStackTrace();
+//                    }
+//                }
+//            }).start();
 
 
         } else {
