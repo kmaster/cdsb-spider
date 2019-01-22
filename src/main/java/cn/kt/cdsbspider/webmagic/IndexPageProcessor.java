@@ -89,14 +89,6 @@ public class IndexPageProcessor extends Thread implements PageProcessor {
                             Spider.create(itemPageProcessor).addUrl(itemurl).run();
                         }
                     });
-
-//                    new Thread(new Runnable() {
-//                        @Override
-//                        public void run() {
-//                            Spider.create(itemPageProcessor).addUrl(itemurl).run();
-//                        }
-//                    }).start();
-
                     currentCount.getAndIncrement();
                 }
             } catch (Exception e) {

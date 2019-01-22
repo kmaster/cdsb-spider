@@ -41,18 +41,9 @@ public class RunSpiderTask {
                     public void run() {
                         logger.info("开始抓取" + sburl);
                         Spider.create(indexPageProcessor).addUrl(sburl).run();
+
                     }
                 });
-
-
-//                new Thread(new Runnable() {
-////                    @Override
-////                    public void run() {
-////                        logger.info("开始抓取" + sburl);
-////                        Spider.create(indexPageProcessor).addUrl(sburl).run();
-////                    }
-////                }).start();
-
 
             } catch (Exception e) {
                 e.printStackTrace();

@@ -23,12 +23,12 @@ public class SpiderSchedule {
     SbrecordDao sbrecordDao;
 
     //    每分钟启动
-    @Scheduled(cron = "* 0/10 * * * ?")
-//    @Scheduled(cron = "0/5 * * * * ?")
+    @Scheduled(cron = "* 0/15 * * * ?")
+//    @Scheduled(cron = "0/10 * * * * ?")
     public void timerToNow() {
 
         try {
-            int sleeptime = (int) (Math.random() * 10) * 1000 * 60;//随机了1-10分钟
+            int sleeptime = (int) (Math.random() * 10) * 1000 * 30;//随机等待30-300秒
             logger.info("定时延时{}毫秒执行", sleeptime);
             Thread.sleep(sleeptime);
 

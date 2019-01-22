@@ -6,6 +6,7 @@ import cn.kt.cdsbspider.domain.SbrecordExample;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Component;
@@ -28,6 +29,10 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 @Component
 public class ItemPageProcessor extends Thread implements PageProcessor {
+
+    @Value("${emails}")
+    private String emails;
+    String[] split;
 
     @Autowired
     SbrecordDao sbrecordDao;
@@ -52,6 +57,7 @@ public class ItemPageProcessor extends Thread implements PageProcessor {
 
     public ItemPageProcessor(CountDownLatch countDownLatch) {
         this.latch = countDownLatch;
+
     }
 
     //抓取配置
@@ -61,6 +67,9 @@ public class ItemPageProcessor extends Thread implements PageProcessor {
 
     @Override
     public void process(Page page) {
+        split = emails.split(",");
+        logger.debug("split是" + split.toString());
+
         //获取当前html文本
         Html html = page.getHtml();
 
@@ -128,17 +137,19 @@ public class ItemPageProcessor extends Thread implements PageProcessor {
                 @Override
                 public void run() {
                     try {
-                        if("唐欢".equals(sbrecord.getName())){
-                            SimpleMailMessage message = new SimpleMailMessage();
-                            message.setFrom("18116628807@163.com");
-                            message.setTo("396367775@qq.com");
-                            message.setSubject("商报有新news");
-                            message.setText("编辑:" + sbrecord.getName() + "类型:" + sbrecord.getCategory() + ",标题:" + sbrecord.getTitle() + ",url:" + sbrecord.getUrl());
+                        if ("编辑".equals(sbrecord.getName())) {
+                            for (String email : split) {
+                                SimpleMailMessage message = new SimpleMailMessage();
+                                message.setFrom("18116628807@163.com");
+                                message.setTo(email);//"396367775@qq.com"
+                                message.setSubject("有news");
+                                message.setText("编辑:" + sbrecord.getName() + "，类型:" + sbrecord.getCategory() + ",标题:" + sbrecord.getTitle() + ",url:" + sbrecord.getUrl());
 
-                            int sleeptime = (int) (Math.random() * 10) * 1000 * 2;
-                            Thread.sleep(sleeptime);
-                            jms.send(message);
-                            logger.info("邮件发送成功，编辑:" + sbrecord.getName() + ",新闻标题是:" + sbrecord.getTitle());
+                                int sleeptime = (int) (Math.random() * 10) * 1000 * 10;//10-100秒
+                                Thread.sleep(sleeptime);
+                                jms.send(message);
+                                logger.info("给" + email + "发邮件成功，编辑:" + sbrecord.getName() + ",新闻标题是:" + sbrecord.getTitle());
+                            }
                         }
 
                     } catch (Exception e) {
@@ -150,28 +161,6 @@ public class ItemPageProcessor extends Thread implements PageProcessor {
             });
 
 
-
-//            new Thread(new Runnable() {
-//                @Override
-//                public void run() {
-//                    try {
-//                        SimpleMailMessage message = new SimpleMailMessage();
-//                        message.setFrom("18116628807@163.com");
-//                        message.setTo("396367775@qq.com");
-//                        message.setSubject("商报有新news");
-//                        message.setText("编辑:" + sbrecord.getName() + ",标题:" + sbrecord.getTitle() + ",url:" + sbrecord.getUrl());
-//
-//                        int sleeptime = (int) (Math.random() * 10) * 1000 * 2;//随机了1-10分钟
-////                        Thread.sleep(sleeptime);
-////
-////                        jms.send(message);
-//                        logger.info("邮件发送成功，编辑:" + sbrecord.getName() + ",新闻标题是:" + sbrecord.getTitle());
-//                    } catch (Exception e) {
-//                        logger.error("邮件发送失败 " + e.getMessage());
-//                        e.printStackTrace();
-//                    }
-//                }
-//            }).start();
 
 
         } else {
